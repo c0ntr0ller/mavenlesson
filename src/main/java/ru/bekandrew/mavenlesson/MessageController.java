@@ -1,14 +1,13 @@
 package ru.bekandrew.mavenlesson;
 
-import javax.activation.MailcapCommandMap;
 import java.sql.*;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
-
 /**
  * Created by Bek on 15.10.2015.
  */
-public class MessageController implements GuestBookControler{
+public class MessageController implements GuestBookController {
     private static Connection conn;
     private Statement stmnt;
     private PreparedStatement ps;
@@ -18,7 +17,7 @@ public class MessageController implements GuestBookControler{
             conn = DriverManager.getConnection("jdbc:h2:mem:mydatabase");
         }
         catch (SQLException e){
-            MessageMain.loggerMessage("Database connection error");
+            OutputAndLog.loggerMessage("database connection error");
         }
 
         try {
@@ -28,24 +27,26 @@ public class MessageController implements GuestBookControler{
         }
 
         try {
-            ps = conn.prepareStatement("insert into test(id, name) values (?,?)");
+            stmnt.execute("create table messages(id int AUTO_INCREMENT, postDate timestamp DEFAULT CURRENT_TIMESTAMP(), message varchar(120))");
+        }
+        catch (SQLException e){
+            OutputAndLog.loggerMessage("create table 'messages' failed");
+        }
+
+        try {
+            ps = conn.prepareStatement("insert into messages(message) values (?)");
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
-        try {
-            stmnt.execute("create table messages(id int, postDate timestamp, message varchar(120))");
-        }
-        catch (SQLException e){
-            MessageMain.loggerMessage("create table messages failed");
-        }
+
     }
 
     @Override
     public void addRecord(String message) {
         try {
-            ps.setInt(1, 2);
-            ps.setString(2, "t2");
+            ps.setString(1, message);
+            ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -55,20 +56,30 @@ public class MessageController implements GuestBookControler{
     public List<Record> getRecords() {
         List<Record> lr = new ArrayList<>();
         try(ResultSet rs = stmnt.executeQuery("select id, postDate, message from messages")) {
-            rs.first();
-            {
+            while(!rs.isLast()){
+                rs.next();
                 lr.add(new Record(rs.getInt(1), rs.getTimestamp(2), rs.getString(3)));
-            }while(!rs.isLast());
-
+            }
+            rs.close();
+            System.out.println("lr size " + lr.size());
         } catch (SQLException e) {
-            MessageMain.loggerMessage("Cannot get messages");
+            OutputAndLog.loggerMessage("Cannot get messages");
         }
         finally {
             return lr;
         }
     }
 
-    public void PrintRecords(List<Record> list){
+    public void PrintRecords(){
+        PrintRecords(getRecords());
+    }
 
+    public void PrintRecords(List<Record> list){
+        MessageFormat formatDateTime = new MessageFormat("{0, date, yyyy/MM/dd hh:mm:ss}");
+        for(Record r: list){
+            OutputAndLog.loggerMessage("ID: " + r.getId());
+            OutputAndLog.loggerMessage("date/time: " + formatDateTime.format(new Object[]{r.getPostDate()}));
+            OutputAndLog.loggerMessage("message: " + r.getMessage());
+        }
     }
 }

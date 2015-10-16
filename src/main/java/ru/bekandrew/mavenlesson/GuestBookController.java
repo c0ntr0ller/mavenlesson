@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Created by Bek on 15.10.2015.
  */
-public interface GuestBookControler {
+public interface GuestBookController {
     void addRecord(String message);
     List<Record> getRecords();
 }
@@ -21,6 +21,18 @@ class Record{
         this.id = id;
         this.postDate = postDate;
         this.message = message;
+    }
+
+    public int getId(){
+        return id;
+    }
+
+    public Timestamp getPostDate(){
+        return postDate;
+    }
+
+    public String getMessage(){
+        return message;
     }
 }
 
